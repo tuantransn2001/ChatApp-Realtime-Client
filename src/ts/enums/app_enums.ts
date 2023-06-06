@@ -1,5 +1,6 @@
-enum PROJECT_STUFF {
-  ENDPOINT = "http://localhost:4000",
+enum USER_ROLE {
+  ADMIN = "admin",
+  USER = "user",
 }
 
-export { PROJECT_STUFF };
+export { USER_ROLE };

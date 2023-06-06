@@ -1,15 +1,21 @@
 import React, { useContext } from "react";
 import io from "socket.io-client";
-import fetchAPI from "../utils/fetch";
-
+import { isMemberOfConversation } from "../common";
 import { useLocalStorage } from "../hooks";
-import { PROJECT_STUFF } from "../ts/enums/app_enums";
+import UnibertyAPIServices from "../services/uniberty";
+import {
+  API_RESPONSE_STATUS,
+  API_STUFF,
+  STATUS_CODE,
+} from "../ts/enums/api_enums";
+import { USER_ROLE } from "../ts/enums/app_enums";
 import {
   SocketContextAttributes,
-  ConversationAttributes,
-  UserAttributes,
+  MessageAttributes,
+  RestFullAPIAttributes,
 } from "../ts/interfaces/app_interface";
-const _ENDPOINT: string = PROJECT_STUFF.ENDPOINT as string;
+import { ObjectDynamicValueAttributes } from "../ts/interfaces/global_interfaces";
+const _ENDPOINT: string = API_STUFF.socket_connect_url as string;
 
 let socket: any = io(_ENDPOINT);
 
@@ -18,11 +24,40 @@ const SocketContext = React.createContext<SocketContextAttributes>({});
 const SocketsProvider = ({ children }: any) => {
   const [isOnline, setIsOnline] = React.useState<boolean>(navigator.onLine);
   const [roomID, setRoomID] = React.useState<string>("");
-  const [conversations, setConversations] = React.useState<Object>({});
-  const [userContactInfo, setUserContactInfo] = React.useState<Object>({});
+  const [messages, setMessages] = React.useState<Array<MessageAttributes>>([]);
+  const [userContactInfo, setUserContactInfo] =
+    React.useState<ObjectDynamicValueAttributes>({});
   const [currentUserProfile, setCurrentUserProfile] =
-    React.useState<UserAttributes>({});
-  const [currentUserLoginID, setCurrentUserLoginID] = useLocalStorage("id", "");
+    React.useState<ObjectDynamicValueAttributes>({});
+  const [userContactList, setUserContactList] = React.useState<
+    Array<ObjectDynamicValueAttributes>
+  >([]);
+  const [token, _] = useLocalStorage("token", "");
+
+  // * ============================================================
+  // * Handle Get ContactList
+  // * ============================================================
+  React.useEffect(() => {
+    (async () => {
+      const getContactListResult: ObjectDynamicValueAttributes =
+        (await UnibertyAPIServices.getContactList(
+          token,
+          currentUserProfile.id,
+          currentUserProfile.type
+        )) as ObjectDynamicValueAttributes;
+
+      switch (getContactListResult.status) {
+        case API_RESPONSE_STATUS.SUCCESS: {
+          setUserContactList([...getContactListResult.data]);
+          break;
+        }
+        case API_RESPONSE_STATUS.FAIL: {
+          setUserContactList([]);
+          break;
+        }
+      }
+    })();
+  }, [roomID, messages]);
 
   /* ==========================
   ? Set user connection status
@@ -31,7 +66,7 @@ const SocketsProvider = ({ children }: any) => {
     const handleSetConnectStatus = (event: any) => {
       if (event.type === "beforeunload") {
         event.preventDefault();
-        socket.emit("offline", currentUserLoginID);
+        socket.emit("offline", currentUserProfile?.id);
         event.returnValue = "";
       } else if (event.type === "online" || "offline") {
         setIsOnline(navigator.onLine);
@@ -48,51 +83,49 @@ const SocketsProvider = ({ children }: any) => {
       window.removeEventListener("beforeunload", handleSetConnectStatus);
     };
   }, [isOnline]);
-  /* ==========================
-  ? Handle on connection status
-  =========================== */
-  React.useEffect(() => {
-    const connect_status: string = isOnline ? "ONLINE" : "OFFLINE";
-    socket.emit(connect_status, currentUserLoginID);
-  }, [_ENDPOINT, isOnline]);
-  /* ==========================
-  ? Get current user profile
-  =========================== */
-  React.useEffect(() => {
-    (async () => {
-      const { data } = await fetchAPI.get(`get-by-id/${currentUserLoginID}`);
-      const { contactList, id, name, type } = data.data;
-      const _currentUserProfile = { contactList, id, name, type };
-      setCurrentUserProfile(_currentUserProfile);
-      setCurrentUserLoginID(id);
-    })();
-  }, [currentUserLoginID, _ENDPOINT, isOnline]);
 
-  socket.on("JOINED_ROOM", (roomID: string) => {
-    setRoomID(roomID);
-  });
-  socket.on(
-    "UPDATE_MESSAGE_EXPECT_SENDER",
-    (serverRoomID: string, foundConversation: any) => {
-      // ? Check server roomID equal client roomID
-      if (serverRoomID === roomID) {
-        const updatedConversation = { ...foundConversation };
-        setConversations(updatedConversation);
+  socket.on("JOINED_ROOM", (response: RestFullAPIAttributes["success"]) => {
+    switch (response.statusCode) {
+      case STATUS_CODE.STATUS_CODE_200: {
+        setRoomID(response.data.roomId);
       }
     }
-  );
+  });
+
   socket.on(
     "CREATED_AND_JOIN_ROOM",
-    (serverRoomID: string, foundConversation: any) => {
-      // ? Check server roomID equal client roomID
-      if (serverRoomID === roomID) {
-        const updatedConversation = { ...foundConversation };
-        setConversations(updatedConversation);
+    async (response: RestFullAPIAttributes["success"]) => {
+      switch (response.statusCode) {
+        case STATUS_CODE.STATUS_CODE_200: {
+          const {
+            data: { conversation_id, messages },
+          } = response;
+
+          if (
+            isMemberOfConversation(
+              currentUserProfile as MessageAttributes["sender"],
+              response.data.members
+            )
+          ) {
+            setMessages([...messages]);
+            setRoomID(conversation_id);
+          }
+        }
       }
     }
   );
 
-  console.log(`User ${currentUserLoginID} has join room: ${roomID}`);
+  socket.on(
+    "UPDATE_MESSAGE_EXPECT_SENDER",
+    (response: RestFullAPIAttributes["success"]) => {
+      switch (response.statusCode) {
+        case STATUS_CODE.STATUS_CODE_200: {
+          setMessages([...response.data.messages]);
+        }
+      }
+    }
+  );
+
   return (
     <SocketContext.Provider
       value={{
@@ -101,9 +134,11 @@ const SocketsProvider = ({ children }: any) => {
         isOnline,
         setRoomID,
         setIsOnline,
-        conversations,
         userContactInfo,
-        setConversations,
+        userContactList,
+        setUserContactList,
+        messages,
+        setMessages,
         setUserContactInfo,
         currentUserProfile,
         setCurrentUserProfile,
