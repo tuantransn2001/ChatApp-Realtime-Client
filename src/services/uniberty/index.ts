@@ -1,12 +1,14 @@
-import { ObjectDynamicValueAttributes } from "../../ts/interfaces/global_interfaces";
-import { handleCatchError } from "../../utils/error/errorHandler";
-import HttpException from "../../utils/error/errorCatcher";
+import {
+  HttpException,
+  ObjectDynamicValueAttributes,
+} from "../../ts/interfaces/global_interfaces";
 import RestFullAPIRequest from "../../utils/fetch";
 import {
   API_RESPONSE_STATUS,
   STATUS_CODE,
   STATUS_MESSAGE,
 } from "../../ts/enums/api_enums";
+import { handleCatchError } from "../../utils/error/errorHandler";
 
 interface ObjectWithDynamicValue {
   [type: string]: any;

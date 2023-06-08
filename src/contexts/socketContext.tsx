@@ -8,16 +8,15 @@ import {
   API_STUFF,
   STATUS_CODE,
 } from "../ts/enums/api_enums";
-import { USER_ROLE } from "../ts/enums/app_enums";
 import {
   SocketContextAttributes,
   MessageAttributes,
   RestFullAPIAttributes,
 } from "../ts/interfaces/app_interface";
 import { ObjectDynamicValueAttributes } from "../ts/interfaces/global_interfaces";
-const _ENDPOINT: string = API_STUFF.socket_connect_url as string;
 
-let socket: any = io(_ENDPOINT);
+const ENDPOINT: string = API_STUFF.socket_connect_url as string;
+let socket: any = io(ENDPOINT);
 
 const SocketContext = React.createContext<SocketContextAttributes>({});
 
@@ -58,31 +57,6 @@ const SocketsProvider = ({ children }: any) => {
       }
     })();
   }, [roomID, messages]);
-
-  /* ==========================
-  ? Set user connection status
-  =========================== */
-  React.useEffect(() => {
-    const handleSetConnectStatus = (event: any) => {
-      if (event.type === "beforeunload") {
-        event.preventDefault();
-        socket.emit("offline", currentUserProfile?.id);
-        event.returnValue = "";
-      } else if (event.type === "online" || "offline") {
-        setIsOnline(navigator.onLine);
-      }
-    };
-
-    window.addEventListener("online", handleSetConnectStatus);
-    window.addEventListener("offline", handleSetConnectStatus);
-    window.addEventListener("beforeunload", handleSetConnectStatus);
-
-    return () => {
-      window.removeEventListener("online", handleSetConnectStatus);
-      window.removeEventListener("offline", handleSetConnectStatus);
-      window.removeEventListener("beforeunload", handleSetConnectStatus);
-    };
-  }, [isOnline]);
 
   socket.on("JOINED_ROOM", (response: RestFullAPIAttributes["success"]) => {
     switch (response.statusCode) {

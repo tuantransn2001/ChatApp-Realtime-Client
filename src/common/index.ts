@@ -21,3 +21,7 @@ export const isMemberOfConversation = (
   members: Array<MessageAttributes["sender"]>
 ): boolean =>
   members.findIndex((member) => member.id === userProfileNeedToCheck.id) !== -1;
+
+export const getProperty = <T, K extends keyof T>(Object: T, key: K): T[K] => {
+  return Object[key];
+};

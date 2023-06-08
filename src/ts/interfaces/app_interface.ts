@@ -12,17 +12,23 @@ export interface UserAttributes {
 }
 
 export interface MessageAttributes {
-  sender: { id: string; type: string };
-  content: string;
+  sender: {
+    id: string;
+    type: string;
+  };
+  content: String;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export interface ConversationAttributes {
   id: string;
-  createdAt: Date;
-  members: Array<string>;
+  name?: string;
+  avatar?: string;
+  members: Array<UserAttributes>;
   messages: Array<MessageAttributes>;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface RestFullAPIAttributes {

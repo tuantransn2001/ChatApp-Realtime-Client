@@ -21,34 +21,48 @@ const MessageListStyled = styled.ul`
   })}
 `;
 
-interface MessageItemPropsAttributes {
+type MessageItemWrapperPropsAttributes = {
   isSender?: boolean;
-}
-const MessageItemStyled = styled.li<MessageItemPropsAttributes>`
-  ${(props) => {
-    return `width: 126px;
-    height: 36px;
-    background: #f4f5f7;
-    border-radius: 8px;
-    padding: 8px;
-    align-self: ${props.isSender ? `flex-end` : `flex-start`};
-    ${flexBox({
-      direction: "row",
-      gap: 0,
-      alignItem: "center",
-      justifyContent: "flex-start",
-    })}
-    ${textStyle({
-      fs: FONT_SIZE.default,
-      fw: FONT_WEIGHT.medium,
-      cl: COLOR.neutral90,
-      lh: LINE_HEIGHT.lh1,
-    })}
-  
-    &:hover {
-      cursor: pointer;
-    }`;
-  }}
+};
+
+const MessageItemWrapperStyled = styled.li<MessageItemWrapperPropsAttributes>`
+  ${(props) => `
+  align-self: ${props.isSender ? "flex-end" : "flex-start"};
+  display: flex;
+  align-items: flex-start,
+  gap: 2px;
+  ${flexBox({
+    direction: "row",
+    gap: 2,
+    alignItem: "flex-start",
+    justifyContent: null,
+  })}
+  &:hover {
+    cursor: pointer;
+  }`}
 `;
 
-export { ConversationStyled, MessageListStyled, MessageItemStyled };
+const MessageContentStyled = styled.span`
+  width: 126px;
+  height: 36px;
+  background: #f4f5f7;
+  border-radius: 8px;
+  padding: 8px;
+  ${textStyle({
+    fs: FONT_SIZE.default,
+    fw: FONT_WEIGHT.medium,
+    cl: COLOR.neutral90,
+    lh: LINE_HEIGHT.lh1,
+  })}
+`;
+const MessageContactAvatarStyled = styled.img`
+  border-radius: 50%;
+`;
+
+export {
+  ConversationStyled,
+  MessageListStyled,
+  MessageItemWrapperStyled,
+  MessageContentStyled,
+  MessageContactAvatarStyled,
+};
